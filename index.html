@@ -18,9 +18,11 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const alarmAudio = document.getElementById('alarm-audio');
-    alarmAudio.play();
+    alarmAudio.play().catch(err => {
+      console.warn('Autoplay diblokir. Audio akan diputar saat interaksi pengguna.');
+    });
 
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTo4PURVdJ-76MF00qxXIgOhpfU1xeFuqY1HR73-zXbdXm_tWkxL_TgdLcbq1wATpmiN-NubxDOANhV/pub?output=csv";
+    const sheetUrl = "https://thingproxy.freeboard.io/fetch/https://docs.google.com/spreadsheets/d/e/2PACX-1vTo4PURVdJ-76MF00qxXIgOhpfU1xeFuqY1HR73-zXbdXm_tWkxL_TgdLcbq1wATpmiN-NubxDOANhV/pub?output=csv";
 
     fetch(sheetUrl)
       .then(res => res.text())
@@ -29,11 +31,17 @@
         let alarmActive = false;
 
         rows.forEach(row => {
-          const [timestamp, desa, alarm, alasan, bukti, koordinat] = row.split(',');
-          const [lat, lon] = koordinat.split(',');
-          if (!lat || !lon) return;
+          const columns = row.split(',');
+          if (columns.length < 6) return;
 
-          const marker = L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map);
+          const [timestamp, desa, alarm, alasan, bukti, koordinat] = columns;
+          const coords = koordinat.split(' ');
+          if (coords.length !== 2) return;
+
+          const [lat, lon] = coords.map(parseFloat);
+          if (isNaN(lat) || isNaN(lon)) return;
+
+          const marker = L.marker([lat, lon]).addTo(map);
           marker.bindPopup(`
             <b>${desa}</b><br>
             Alarm: ${alarm}<br>
@@ -49,6 +57,9 @@
         if (!alarmActive) {
           alarmAudio.pause();
         }
+      })
+      .catch(error => {
+        console.error('Gagal mengambil data:', error);
       });
   </script>
 </body>
