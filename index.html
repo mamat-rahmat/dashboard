@@ -18,27 +18,28 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     const alarmAudio = document.getElementById('alarm-audio');
-    alarmAudio.play().catch(err => {
-      console.warn('Autoplay diblokir. Audio akan diputar saat interaksi pengguna.');
+    alarmAudio.play().catch(() => {
+      console.warn("Autoplay diblokir. Akan diputar saat ada interaksi.");
     });
 
-    const sheetUrl = "https://thingproxy.freeboard.io/fetch/https://docs.google.com/spreadsheets/d/e/2PACX-1vTo4PURVdJ-76MF00qxXIgOhpfU1xeFuqY1HR73-zXbdXm_tWkxL_TgdLcbq1wATpmiN-NubxDOANhV/pub?output=csv";
+    // Ganti URL ini dengan URL Web App dari Apps Script kamu
+    const apiUrl = "https://script.google.com/macros/s/AKfycbxyz123abc456/exec";
 
-    fetch(sheetUrl)
-      .then(res => res.text())
-      .then(csv => {
-        const rows = csv.trim().split('\n').slice(1);
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(data => {
         let alarmActive = false;
 
-        rows.forEach(row => {
-          const columns = row.split(',');
-          if (columns.length < 6) return;
+        data.forEach(row => {
+          const desa = row['desa'];
+          const alarm = row['alarm'];
+          const alasan = row['alasan'];
+          const bukti = row['bukti'];
+          const koordinat = row['koordinat'];
 
-          const [timestamp, desa, alarm, alasan, bukti, koordinat] = columns;
-          const coords = koordinat.split(' ');
-          if (coords.length !== 2) return;
+          if (!desa || !alarm || !koordinat) return;
 
-          const [lat, lon] = coords.map(parseFloat);
+          const [lat, lon] = koordinat.trim().split(/[ ,]+/).map(parseFloat);
           if (isNaN(lat) || isNaN(lon)) return;
 
           const marker = L.marker([lat, lon]).addTo(map);
@@ -58,8 +59,8 @@
           alarmAudio.pause();
         }
       })
-      .catch(error => {
-        console.error('Gagal mengambil data:', error);
+      .catch(err => {
+        console.error("Gagal mengambil data dari Apps Script:", err);
       });
   </script>
 </body>
