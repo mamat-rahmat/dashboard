@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard Alarm Desa</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <audio id="alarm-audio" src="alarm.mp3" preload="auto" loop></audio>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([-6.9, 107.6], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const alarmAudio = document.getElementById('alarm-audio');
+    alarmAudio.play();
+
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTo4PURVdJ-76MF00qxXIgOhpfU1xeFuqY1HR73-zXbdXm_tWkxL_TgdLcbq1wATpmiN-NubxDOANhV/pub?output=csv";
+
+    fetch(sheetUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').slice(1);
+        let alarmActive = false;
+
+        rows.forEach(row => {
+          const [timestamp, desa, alarm, alasan, bukti, koordinat] = row.split(',');
+          const [lat, lon] = koordinat.split(',');
+          if (!lat || !lon) return;
+
+          const marker = L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map);
+          marker.bindPopup(`
+            <b>${desa}</b><br>
+            Alarm: ${alarm}<br>
+            Alasan: ${alasan}<br>
+            <a href="${bukti}" target="_blank">Lihat Bukti</a>
+          `);
+
+          if (alarm.trim().toUpperCase() === 'AKTIF') {
+            alarmActive = true;
+          }
+        });
+
+        if (!alarmActive) {
+          alarmAudio.pause();
+        }
+      });
+  </script>
+</body>
+</html>
